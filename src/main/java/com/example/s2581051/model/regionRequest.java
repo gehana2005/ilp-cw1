@@ -1,10 +1,13 @@
-package com.example.s2581051;
+package com.example.s2581051.model;
 
+
+import com.example.s2581051.model.position;
+import com.example.s2581051.model.region;
 
 public class regionRequest {
 
-    private position position;
-    private region region;
+    private com.example.s2581051.model.position position;
+    private com.example.s2581051.model.region region;
 
     public regionRequest(){}
 
