@@ -3,10 +3,7 @@ package com.example.s2581051.controller;
 import com.example.s2581051.model.*;
 import com.example.s2581051.service.GeoService;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.util.List;
 import java.util.Map;
@@ -28,12 +25,6 @@ public class cw1Controller {
     @GetMapping("/api/v1/uid")
     public String getUID(){
         return "s2581051";
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<String> handleBadJson(HttpMessageNotReadableException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("error: bad json");
     }
 
     @PostMapping("/api/v1/distanceTo")
