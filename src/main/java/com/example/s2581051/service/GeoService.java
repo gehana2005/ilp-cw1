@@ -12,6 +12,7 @@ public class GeoService {
 
     public double euclideanDistance(position p1, position p2){
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
         if (p1 == null || p2 == null ||
@@ -21,6 +22,14 @@ public class GeoService {
         }
 
 >>>>>>> Stashed changes
+=======
+        if (p1 == null || p2 == null ||
+            p1.getLat() == null || p2.getLat() == null ||
+            p1.getLng() == null || p2.getLng() == null) {
+            throw new BadRequestException("Null fields encountered");
+        }
+
+>>>>>>> ec878c90ff39b66464ba06b60d3495e42093154c
         double x = p1.getLng() - p2.getLng();
         double y = p1.getLat() - p2.getLat();
 
