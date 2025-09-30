@@ -12,6 +12,12 @@ public class GeoService {
 
     public double euclideanDistance(position p1, position p2){
 
+        if (p1 == null || p2 == null ||
+            p1.getLat() == null || p2.getLat() == null ||
+            p1.getLng() == null || p2.getLng() == null) {
+            throw new BadRequestException("Null fields encountered");
+        }
+
         double x = p1.getLng() - p2.getLng();
         double y = p1.getLat() - p2.getLat();
 
