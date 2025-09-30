@@ -1,4 +1,6 @@
-package com.example.s2581051;
+package com.example.s2581051.model;
+
+import com.example.s2581051.model.position;
 
 import java.util.List;
 

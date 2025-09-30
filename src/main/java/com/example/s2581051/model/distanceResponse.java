@@ -1,4 +1,4 @@
-package com.example.s2581051;
+package com.example.s2581051.model;
 
 public class distanceResponse {
     private final double distance;
