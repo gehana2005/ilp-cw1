@@ -12,10 +12,33 @@ public class GeoService {
 
     public double euclideanDistance(position p1, position p2){
 
+<<<<<<< Updated upstream
+=======
+        if (p1 == null || p2 == null ||
+            p1.getLat() == null || p2.getLat() == null ||
+            p1.getLng() == null || p2.getLng() == null) {
+            throw new BadRequestException("Invalid Request Body");
+        }
+
+>>>>>>> Stashed changes
         double x = p1.getLng() - p2.getLng();
         double y = p1.getLat() - p2.getLat();
 
         return Math.sqrt(x*x + y*y);
+    }
+
+    public position nextPoint(position start , double angle) {
+
+        if (start == null || start.getLng() == null || start.getLat() == null) {
+            throw new BadRequestException("Invalid Request Body");
+        }
+
+        double ds = 0.00015;
+
+        double lng = start.getLng() + ds * Math.cos(Math.toRadians(angle));
+        double lat = start.getLat() + ds * Math.sin(Math.toRadians(angle)) ;
+
+        return new position(lng, lat);
     }
 
     public boolean pointInPolygon(position point, List<position> vertices){
@@ -35,7 +58,7 @@ public class GeoService {
         }
 
         if (!isClosedPolygon(vertices)){
-            throw new BadRequestException("Region is not closed");
+            throw new BadRequestException("Invalid Polygon");
         }
 
         return intersections % 2 == 1;

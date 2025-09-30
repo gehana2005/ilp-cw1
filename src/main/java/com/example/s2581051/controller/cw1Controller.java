@@ -55,15 +55,10 @@ public class cw1Controller {
     @PostMapping("/api/v1/nextPoint")
     public position nextPoint(@RequestBody positionRequest request){
 
-        double ds = 0.00015;
-
         position start = request.getStart();
         double angle = request.getAngle();
 
-        double lng = start.getLng() + ds * Math.cos(Math.toRadians(angle));
-        double lat = start.getLat() + ds * Math.sin(Math.toRadians(angle)) ;
-
-        return new position(lng, lat);
+        return geoService.nextPoint(start, angle);
     }
 
     @PostMapping("api/v1/isInRegion")
