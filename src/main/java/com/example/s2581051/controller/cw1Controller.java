@@ -67,21 +67,13 @@ public class cw1Controller {
     }
 
     @PostMapping("api/v1/isInRegion")
-    public ResponseEntity<Map<String, Object>> isInRegion(@RequestBody regionRequest request){
+    public Map<String, Object> isInRegion(@RequestBody regionRequest request){
 
         position point = request.getPosition();
         List<position> vertices = request.getRegion().getVertices();
 
-        if (!(geoService.isClosedPolygon(vertices))) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("region", request.getRegion().getName()));
-        }
-
-        return ResponseEntity.ok(Map.of(
+        return Map.of(
                 "region", request.getRegion().getName(),
-                "inside", geoService.pointInPolygon(point, vertices))
-        );
+                "inside", geoService.pointInPolygon(point, vertices));
     }
-
 }

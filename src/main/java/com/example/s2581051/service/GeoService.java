@@ -1,5 +1,6 @@
 package com.example.s2581051.service;
 
+import com.example.s2581051.exception.BadRequestException;
 import com.example.s2581051.model.position;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,11 @@ public class GeoService {
                 }
             }
         }
+
+        if (!isClosedPolygon(vertices)){
+            throw new BadRequestException("Region is not closed");
+        }
+
         return intersections % 2 == 1;
     }
 

@@ -1,9 +1,5 @@
 package com.example.s2581051.model;
 
-
-import com.example.s2581051.model.position;
-import com.example.s2581051.model.region;
-
 public class regionRequest {
 
     private com.example.s2581051.model.position position;
