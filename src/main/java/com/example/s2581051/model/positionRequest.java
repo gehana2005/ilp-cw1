@@ -1,4 +1,6 @@
-package com.example.s2581051;
+package com.example.s2581051.model;
+
+import com.example.s2581051.model.position;
 
 public class positionRequest {
     private position start;
