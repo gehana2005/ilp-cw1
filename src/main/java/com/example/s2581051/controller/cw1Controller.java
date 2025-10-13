@@ -28,10 +28,10 @@ public class cw1Controller {
     }
 
     @PostMapping("/api/v1/distanceTo")
-    public distanceResponse distanceTo(@RequestBody distanceRequest request){
+    public double distanceTo(@RequestBody distanceRequest request){
 
         double distance = geoService.euclideanDistance(request.getPosition1(), request.getPosition2());
-        return new distanceResponse(distance);
+        return distance;
     }
 
     @PostMapping("/api/v1/isCloseTo")

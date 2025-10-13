@@ -19,7 +19,6 @@ public class region {
     public String getName(){
         return name;
     }
-
     public List<position> getVertices(){
         return vertices;
     }

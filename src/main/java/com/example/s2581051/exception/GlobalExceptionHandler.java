@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String,Object>> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "error", ex.getMessage(),
-                "status", 404
+                "status", 400
         ));
     }
 
@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "error", "Unexpected error",
                 "details", ex.getMessage(),
-                "status", 500
+                "status", 400
         ));
     }
 

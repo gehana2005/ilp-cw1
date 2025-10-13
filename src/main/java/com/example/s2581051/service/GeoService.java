@@ -24,9 +24,9 @@ public class GeoService {
         return Math.sqrt(x*x + y*y);
     }
 
-    public position nextPoint(position start , double angle) {
+    public position nextPoint(position start , Double angle) {
 
-        if (start == null || start.getLng() == null || start.getLat() == null) {
+        if (start == null || start.getLng() == null || start.getLat() == null || angle == null) {
             throw new BadRequestException("Invalid Request Body");
         }
 
@@ -57,7 +57,6 @@ public class GeoService {
         if (!isClosedPolygon(vertices)){
             throw new BadRequestException("Invalid Polygon");
         }
-
         return intersections % 2 == 1;
     }
 
