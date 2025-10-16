@@ -1,20 +1,26 @@
 package com.example.s2581051.controller;
 
 import com.example.s2581051.model.*;
-import com.example.s2581051.service.GeoService;
+import com.example.s2581051.service.distanceService;
+import com.example.s2581051.service.polygonService;
+import com.example.s2581051.service.nextpositionService;
+import jakarta.validation.Valid;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 public class cw1Controller {
 
-    private final GeoService geoService;
+    private final distanceService distanceService;
+    private final polygonService polyService;
+    private final nextpositionService nextpositionService;
 
-    public cw1Controller(GeoService geoService){
-        this.geoService = geoService;
+    public cw1Controller(distanceService distanceService, polygonService polyService, nextpositionService nextpositionService){
+        this.distanceService = distanceService;
+        this.polyService = polyService;
+        this.nextpositionService = nextpositionService;
     }
 
     @GetMapping("/actuator/health")
@@ -28,38 +34,28 @@ public class cw1Controller {
     }
 
     @PostMapping("/api/v1/distanceTo")
-    public double distanceTo(@RequestBody distanceRequest request){
-
-        double distance = geoService.euclideanDistance(request.getPosition1(), request.getPosition2());
-        return distance;
+    public double distanceTo(@Valid @RequestBody DistanceRequest request){
+        return distanceService.euclideanDistance(request.getPosition1(), request.getPosition2());
     }
 
     @PostMapping("/api/v1/isCloseTo")
-    public boolean isCloseTo(@RequestBody distanceRequest request){
-
-        position p1 = request.getPosition1();
-        position p2 = request.getPosition2();
-
-        return geoService.euclideanDistance(p1, p2) < 0.00015;
+    public boolean isCloseTo(@Valid @RequestBody DistanceRequest request){
+        Position p1 = request.getPosition1();
+        Position p2 = request.getPosition2();
+        return distanceService.isCloseTo(p1, p2);
     }
 
-    @PostMapping("/api/v1/nextPoint")
-    public position nextPoint(@RequestBody positionRequest request){
-
-        position start = request.getStart();
+    @PostMapping("/api/v1/nextPosition")
+    public Position nextPosition(@Valid @RequestBody PositionRequest request){
+        Position start = request.getStart();
         double angle = request.getAngle();
-
-        return geoService.nextPoint(start, angle);
+        return nextpositionService.nextPosition(start, angle);
     }
 
-    @PostMapping("api/v1/isInRegion")
-    public Map<String, Object> isInRegion(@RequestBody regionRequest request){
-
-        position point = request.getPosition();
-        List<position> vertices = request.getRegion().getVertices();
-
-        return Map.of(
-                "region", request.getRegion().getName(),
-                "inside", geoService.pointInPolygon(point, vertices));
+    @PostMapping("/api/v1/isInRegion")
+    public boolean isInRegion(@Valid @RequestBody RegionRequest request){
+        Position point = request.getPosition();
+        List<Position> vertices = request.getRegion().getVertices();
+        return polyService.pointInPolygon(point, vertices);
     }
 }
