@@ -12,14 +12,15 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 public class nextpositionServiceTest {
 
-    private distanceService service;
+    private nextpositionService service;
     private Validator validator;
 
     @BeforeEach
     void setUp(){
-
-
-
+        service = new nextpositionService();
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
     }
 
+    // VALIDATION TESTs
 }
