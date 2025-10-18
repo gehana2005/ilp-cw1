@@ -18,7 +18,5 @@ public class PositionRequest {
     private Position start;
 
     @NotNull(message = "Angle is required ")
-    @DecimalMin(value = "0.0", message = "Angle must be >= 0")
-    @DecimalMax(value = "360.0", message = "Angle must be <= 360")
     private Double angle;
 }

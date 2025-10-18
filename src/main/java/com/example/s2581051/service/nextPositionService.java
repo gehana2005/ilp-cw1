@@ -4,7 +4,7 @@ import com.example.s2581051.model.Position;
 import org.springframework.stereotype.Service;
 
 @Service
-public class nextpositionService {
+public class nextPositionService {
 
     public Position nextPosition(Position start , Double angle) {
 
