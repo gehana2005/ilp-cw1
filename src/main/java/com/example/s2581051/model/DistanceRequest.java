@@ -15,6 +15,7 @@ public class DistanceRequest {
     @Valid
     @NotNull(message = "position1 is required")
     private Position position1;
+
     @Valid
     @NotNull(message = "position2 is required ")
     private Position position2;

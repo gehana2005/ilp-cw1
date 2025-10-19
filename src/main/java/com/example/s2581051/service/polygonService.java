@@ -40,7 +40,7 @@ public class polygonService {
         double x1 = a.getLng(), y1 = a.getLat();
         double x2 = b.getLng(), y2 = b.getLat();
 
-        // Check collinearity using cross-product = 0
+        // Check collinear using cross-product = 0
         double cross = (y - y1) * (x2 - x1) - (y2 - y1) * (x - x1);
         if (Math.abs(cross) > 0) return false;
 

@@ -11,7 +11,6 @@ public class RegionRequest {
     @Valid
     @NotNull(message = "Position is required")
     private Position position;
-
     @Valid
     @NotNull(message = "Region is required")
     private Region region;
