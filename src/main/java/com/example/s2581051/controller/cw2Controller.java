@@ -2,6 +2,7 @@ package com.example.s2581051.controller;
 
 import com.example.s2581051.model.Drone;
 import com.example.s2581051.service.droneCoolingService;
+import com.example.s2581051.service.queryAsPathService;
 import com.example.s2581051.service.droneDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,9 @@ public class cw2Controller {
     @Autowired
     private droneDetailsService droneDetailsService;
 
+    @Autowired
+    private queryAsPathService queryAsPathService;
+
     @GetMapping("/dronesWithCooling/{state}")
     public List<String> getDronesWithCooling(@PathVariable boolean state) {
         return droneCoolingService.getDronesWithCooling(state);
@@ -39,6 +43,11 @@ public class cw2Controller {
         }
 
         return drone;
+    }
+
+    @GetMapping("/queryAsPath/{attribute}/{value}")
+    public List<String> queryAsPath(@PathVariable String attribute, @PathVariable String value) {
+        return queryAsPathService.getQuery(attribute, value);
     }
 }
 
