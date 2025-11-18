@@ -7,9 +7,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * Global exception handler for the application.
+ * This class intercepts and handles exceptions globally across all controllers.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Handles malformed JSON or invalid request body
+     * @return HTTP 400 with the error message
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<?> handleInvalidJson() {
         return ResponseEntity.badRequest().body(Map.of(
@@ -18,6 +26,10 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * Handles validation errors
+     * @return HTTP 400 with the validation error message
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex) {
         String msg = ex.getFieldError() == null
@@ -25,13 +37,6 @@ public class GlobalExceptionHandler {
                 : ex.getFieldError().getDefaultMessage();
         return ResponseEntity.badRequest().body(Map.of(
                 "error", msg,
-                "status", 400
-        ));
-    }
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGeneral(Exception ex) {
-        return ResponseEntity.badRequest().body(Map.of(
-                "error", ex.getMessage() == null ? "Unexpected error" : ex.getMessage(),
                 "status", 400
         ));
     }
