@@ -1,15 +1,14 @@
 package com.example.s2581051.controller;
 
 import com.example.s2581051.model.Drone;
+import com.example.s2581051.model.QueryRule;
 import com.example.s2581051.service.droneCoolingService;
 import com.example.s2581051.service.queryAsPathService;
 import com.example.s2581051.service.droneDetailsService;
+import com.example.s2581051.service.queryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -27,6 +26,9 @@ public class cw2Controller {
 
     @Autowired
     private queryAsPathService queryAsPathService;
+
+    @Autowired
+    private queryService queryService;
 
     @GetMapping("/dronesWithCooling/{state}")
     public List<String> getDronesWithCooling(@PathVariable boolean state) {
@@ -48,6 +50,11 @@ public class cw2Controller {
     @GetMapping("/queryAsPath/{attribute}/{value}")
     public List<String> queryAsPath(@PathVariable String attribute, @PathVariable String value) {
         return queryAsPathService.getQuery(attribute, value);
+    }
+
+    @PostMapping("/query")
+    public List<String> query(@RequestBody List<QueryRule> rules) {
+        return queryService.filter(rules);
     }
 }
 
