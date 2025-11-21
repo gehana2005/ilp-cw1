@@ -20,123 +20,111 @@ public class pathFindingService {
 
     public double findMaxCost(List<MedDispatchRec> records, Drone drone) {
 
-        if (drone == null || records == null || records.isEmpty()) {
-            return 0.0;
-        }
-
         ServicePointDrones[] servicePointDrones =
                 restTemplate.getForObject(ilpEndpoint + "/drones-for-service-points",
                         ServicePointDrones[].class);
+
         ServicePoint[] servicePoints =
                 restTemplate.getForObject(ilpEndpoint + "/service-points",
                         ServicePoint[].class);
 
         if (servicePointDrones == null || servicePoints == null) {
-            return 0.0;
+            return Double.POSITIVE_INFINITY;
         }
 
         for (ServicePointDrones spd : servicePointDrones) {
-            if (spd == null || spd.getDrones() == null) continue;
-
             for (ServicePointDrone d : spd.getDrones()) {
-                if (d == null || d.getId() == null) continue;
 
                 if (d.getId().equals(drone.getId())) {
-                    // Match service point
+
                     for (ServicePoint sp : servicePoints) {
-                        if (sp == null || sp.getId() == null) continue;
 
                         if (sp.getId().equals(spd.getServicePointId())) {
-                            Position start = sp.getLocation();
-                            if (start == null) return 0.0;
 
-                            // Compute path
+                            Position start = sp.getLocation();
+
                             Map<Position, Double> path = findPath(start, records);
                             int moves = calculateMaxMoves(path);
 
-                            return calculateMaxCost(moves, drone, records.size());
+                            if (moves > drone.getCapability().getMaxMoves()) {
+                                return Double.POSITIVE_INFINITY;
+                            }
+
+                            return calculateMaxCost(moves, drone, records);
                         }
                     }
                 }
             }
         }
 
-        return 0.0;
+        return Double.POSITIVE_INFINITY;
     }
+
 
     public Map<Position, Double> findPath(Position sp, List<MedDispatchRec> records) {
 
+        ArrayList<Position> remaining = new ArrayList<>();
         Map<Position, Double> result = new LinkedHashMap<>();
+
         result.put(sp, 0.0);
 
-        if (records == null || records.isEmpty()) {
-            return result;
-        }
-
-        List<Position> remaining = new ArrayList<>();
         for (MedDispatchRec record : records) {
-            if (record != null && record.getDelivery() != null) {
-                remaining.add(record.getDelivery());
-            }
+            Position dest = record.getDelivery();
+            remaining.add(dest);
         }
 
         Position current = sp;
 
         while (!remaining.isEmpty()) {
 
-            Map<Position, Double> candidates = new HashMap<>();
+            Map<Position, Double> distances = new HashMap<>();
 
             for (Position p : remaining) {
-                Double dist = distanceService.euclideanDistance(current, p);
-                candidates.put(p, dist);
+                double dist = distanceService.euclideanDistance(current, p);
+                distances.put(p, dist);
             }
 
-            // nearest neighbour step
-            Map.Entry<Position, Double> minEntry = candidates.entrySet()
-                    .stream()
-                    .min(Map.Entry.comparingByValue())
-                    .orElse(null);
+            Map.Entry<Position, Double> minEntry =
+                    distances.entrySet().stream()
+                            .min(Map.Entry.comparingByValue())
+                            .orElse(null);
 
             if (minEntry == null) break;
 
-            Position closest = minEntry.getKey();
-            Double distance = minEntry.getValue();
+            Position next = minEntry.getKey();
+            double dist = minEntry.getValue();
 
-            result.put(closest, distance);
-            remaining.remove(closest);
+            result.put(next, dist);
+            remaining.remove(next);
 
-            current = closest;
+            current = next;
         }
+
+        double returnDist = distanceService.euclideanDistance(current, sp);
+        result.put(sp, returnDist);
 
         return result;
     }
 
-    public int calculateMaxMoves(Map<Position, Double> path) {
 
-        if (path == null || path.isEmpty()) return 0;
+    public Integer calculateMaxMoves(Map<Position, Double> path) {
 
         double sum = 0.0;
 
         for (Double d : path.values()) {
-            if (d == null) continue;
-            sum += (d / 0.00015);
+            double moves = d / 0.00015;
+            sum += moves;
         }
 
         return (int) Math.ceil(sum);
     }
 
-    public double calculateMaxCost(int moves, Drone drone, int recordCount) {
+    public Double calculateMaxCost(int moves, Drone drone, List<MedDispatchRec> records) {
 
-        if (drone == null || drone.getCapability() == null || recordCount <= 0) {
-            return 0.0;
-        }
+        Double costInitial = drone.getCapability().getCostInitial();
+        Double costFinal = drone.getCapability().getCostFinal();
+        Double costPerMove = drone.getCapability().getCostPerMove();
 
-        double costInitial = drone.getCapability().getCostInitial();
-        double costFinal = drone.getCapability().getCostFinal();
-        double costPerMove = drone.getCapability().getCostPerMove();
-
-        double totalCost = costInitial + costFinal + moves * costPerMove;
-
-        return totalCost;
+        return (costInitial + costFinal + moves * costPerMove) / records.size();
     }
 }

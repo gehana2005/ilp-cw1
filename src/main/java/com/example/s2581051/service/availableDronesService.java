@@ -14,58 +14,52 @@ public class availableDronesService {
 
     private final String ilpEndpoint;
     private final RestTemplate restTemplate = new RestTemplate();
-    public pathFindingService pathFindingService;
+    private final pathFindingService pathFindingService;
 
-    public availableDronesService(String ilpEndpoint) {
+    public availableDronesService(String ilpEndpoint, pathFindingService pathFindingService) {
         this.ilpEndpoint = ilpEndpoint;
+        this.pathFindingService = pathFindingService;
     }
 
     public List<String> getAvailableDrones(List<MedDispatchRec> records) {
 
         List<String> requirementFilter = satisfiedRequirements(records);
-        List<String> timeFilter = satisfiedTime(records, requirementFilter);
 
+        List<String> timeFilter = satisfiedTime(records, requirementFilter);
         requirementFilter.retainAll(timeFilter);
-        Map<String, Double> max_cost = MaxCost(records, requirementFilter);
-        List<String> costFilter = satisfiesMaxCost(max_cost, records);
+
+        Map<String, Double> maxCostMap = MaxCost(records, requirementFilter);
+
+        List<String> costFilter = satisfiesMaxCost(maxCostMap, records);
 
         requirementFilter.retainAll(costFilter);
 
         return requirementFilter;
-
     }
 
     public List<String> satisfiedRequirements(List<MedDispatchRec> records) {
 
         Drone[] drones = restTemplate.getForObject(ilpEndpoint + "/drones", Drone[].class);
 
-        if (drones == null || records == null) {
-            return List.of();
-        }
+        if (drones == null || records == null) return List.of();
 
         double totalRequiredCapacity = 0.0;
-
         boolean requiresCooling = false;
         boolean requiresHeating = false;
 
         for (MedDispatchRec rec : records) {
             MedRequirements req = rec.getRequirements();
-
             if (req == null) continue;
 
-            if (req.getCapacity() != null) {
+            if (req.getCapacity() != null)
                 totalRequiredCapacity += req.getCapacity();
-            }
 
-            if (Boolean.TRUE.equals(req.getCooling())) {
+            if (Boolean.TRUE.equals(req.getCooling()))
                 requiresCooling = true;
-            }
 
-            if (Boolean.TRUE.equals(req.getHeating())) {
+            if (Boolean.TRUE.equals(req.getHeating()))
                 requiresHeating = true;
-            }
         }
-
 
         List<String> matches = new ArrayList<>();
 
@@ -94,9 +88,7 @@ public class availableDronesService {
                 restTemplate.getForObject(ilpEndpoint + "/drones-for-service-points",
                         ServicePointDrones[].class);
 
-        if (servicePoints == null || allowedDroneIds == null) {
-            return List.of();
-        }
+        if (servicePoints == null || allowedDroneIds == null) return List.of();
 
         List<String> intersection = null;
 
@@ -111,7 +103,6 @@ public class availableDronesService {
             List<String> matches = new ArrayList<>();
 
             for (ServicePointDrones sp : servicePoints) {
-
                 for (ServicePointDrone drone : sp.getDrones()) {
 
                     if (!allowedDroneIds.contains(drone.getId())) continue;
@@ -120,10 +111,9 @@ public class availableDronesService {
                     if (slots == null) continue;
 
                     for (AvailabilitySlot slot : slots) {
-
                         boolean sameDay = slot.getDayOfWeek() == dispatchDay;
-                        boolean insideTime = !time.isBefore(slot.getFrom()) &&
-                                !time.isAfter(slot.getUntil());
+                        boolean insideTime = !time.isBefore(slot.getFrom())
+                                && !time.isAfter(slot.getUntil());
 
                         if (sameDay && insideTime) {
                             matches.add(drone.getId());
@@ -133,44 +123,73 @@ public class availableDronesService {
                 }
             }
 
-            if (intersection == null) {
+            if (intersection == null)
                 intersection = matches;
-            } else {
+            else
                 intersection.retainAll(matches);
-            }
         }
 
         return intersection == null ? List.of() : intersection;
     }
+
 
     public Map<String, Double> MaxCost(List<MedDispatchRec> records, List<String> allowedDroneIds) {
 
         Drone[] drones = restTemplate.getForObject(ilpEndpoint + "/drones", Drone[].class);
         Map<String, Double> maxcost = new HashMap<>();
 
+        if (drones == null) return maxcost;
 
-        for (String id :  allowedDroneIds) {
+        for (String id : allowedDroneIds) {
             for (Drone drone : drones) {
                 if (drone.getId().equals(id)) {
-                    maxcost.put(id, pathFindingService.findMaxCost(records, drone));
+
+                    double cost = pathFindingService.findMaxCost(records, drone);
+
+                    maxcost.put(id, cost);
                 }
             }
         }
 
         return maxcost;
-
     }
 
+
     public List<String> satisfiesMaxCost(Map<String, Double> costmap, List<MedDispatchRec> records) {
-        List<String> matches = new ArrayList<>();
+
+        Double strictestMaxCost = null;
+
         for (MedDispatchRec record : records) {
-            for (String id : costmap.keySet()) {
-                if (costmap.get(id) <= record.getRequirements().getMaxCost()){
-                    matches.add(id);
+            if (record.getRequirements() != null) {
+                Double mc = record.getRequirements().getMaxCost();
+                if (mc != null) {
+                    if (strictestMaxCost == null || mc < strictestMaxCost) {
+                        strictestMaxCost = mc;
+                    }
                 }
             }
         }
+
+        List<String> matches = new ArrayList<>();
+
+        for (Map.Entry<String, Double> entry : costmap.entrySet()) {
+            String id = entry.getKey();
+            Double droneCost = entry.getValue();
+
+            if (droneCost == null || droneCost.isInfinite()) {
+                continue;
+            }
+
+            if (strictestMaxCost == null) {
+                matches.add(id);
+                continue;
+            }
+
+            if (droneCost <= strictestMaxCost) {
+                matches.add(id);
+            }
+        }
+
         return matches;
     }
-
 }
