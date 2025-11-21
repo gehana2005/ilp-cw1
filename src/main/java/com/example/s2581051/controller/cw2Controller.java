@@ -2,10 +2,8 @@ package com.example.s2581051.controller;
 
 import com.example.s2581051.model.Drone;
 import com.example.s2581051.model.QueryRule;
-import com.example.s2581051.service.droneCoolingService;
-import com.example.s2581051.service.queryAsPathService;
-import com.example.s2581051.service.droneDetailsService;
-import com.example.s2581051.service.queryService;
+import com.example.s2581051.model.MedDispatchRec;
+import com.example.s2581051.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +27,9 @@ public class cw2Controller {
 
     @Autowired
     private queryService queryService;
+
+    @Autowired
+    private availableDronesService availableDronesService;
 
     @GetMapping("/dronesWithCooling/{state}")
     public List<String> getDronesWithCooling(@PathVariable boolean state) {
@@ -56,5 +57,11 @@ public class cw2Controller {
     public List<String> query(@RequestBody List<QueryRule> rules) {
         return queryService.filter(rules);
     }
+
+    @PostMapping("/queryAvailableDrones")
+    public List<String> queryAvailableDrones(@RequestBody List<MedDispatchRec> dispatches) {
+        return availableDronesService.getAvailableDrones(dispatches);
+    }
+
 }
 
