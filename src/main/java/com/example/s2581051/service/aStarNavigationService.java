@@ -3,8 +3,11 @@ package com.example.s2581051.service;
 import com.example.s2581051.model.AstarNode;
 import com.example.s2581051.model.AstarPath;
 import com.example.s2581051.model.Position;
+import com.example.s2581051.model.RestrictedArea;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -13,25 +16,29 @@ import java.util.*;
 public class aStarNavigationService {
 
     private final distanceService distanceService;
+    private final nextPositionService nextPositionService;
+    private final polygonService polygonService;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String ilpEndpoint;
+
+    // MUST be RestrictedArea, NOT Position
+    private List<RestrictedArea> restrictedAreas = new ArrayList<>();
 
     private static final double STEP = 0.00015;
 
     private static final double[] ANGLES = {
-            // Degrees: E, ENE, NE, NNE, N, NNW, NW, WNW, 
-            // W, WSW, SW, SSW, S, SSE, SE, ESE
             0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5,
             180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5
     };
 
-    private static final List<double[]> DIRECTIONS = new ArrayList<>();
-
-    static {
-        for (double deg : ANGLES) {
-            double rad = Math.toRadians(deg);
-            double dx = STEP * Math.cos(rad);
-            double dy = STEP * Math.sin(rad);
-            DIRECTIONS.add(new double[] { dx, dy });
-        }
+    @PostConstruct
+    public void loadRestrictedAreas() {
+        RestrictedArea[] arr = restTemplate.getForObject(
+                ilpEndpoint + "/restricted-areas",
+                RestrictedArea[].class
+        );
+        if (arr != null) restrictedAreas = Arrays.asList(arr);
     }
 
     public AstarPath findPath(Position start, Position goal) {
@@ -39,78 +46,134 @@ public class aStarNavigationService {
         PriorityQueue<AstarNode> open = new PriorityQueue<>(
                 Comparator.comparingDouble(n -> n.getGCost() + n.getHCost())
         );
+        Map<String, AstarNode> closed = new HashMap<>();
 
-        Map<String, AstarNode> visited = new HashMap<>();
-
-        AstarNode startNode = new AstarNode(
-                start,
-                0,
-                heuristic(start, goal),
-                null
-        );
-
+        AstarNode startNode = new AstarNode(start, 0, heuristic(start, goal), null);
         open.add(startNode);
 
         while (!open.isEmpty()) {
 
-            AstarNode current = open.poll();
-            String key = key(current.getPosition());
-
-            if (distanceService.euclideanDistance(current.getPosition(), goal) <= STEP) {
-                return reconstructPath(current, true);
+            if (closed.size() > 200000) {
+                return new AstarPath(new ArrayList<>(), 0, false);
             }
 
-            visited.put(key, current);
+            AstarNode current = open.poll();
+            Position currPos = current.getPosition();
+            closed.put(key(currPos), current);
 
-            for (double[] move : DIRECTIONS) {
+            if (distanceService.isCloseTo(currPos, goal)) {
+                return reconstruct(current);
+            }
 
-                Position nextPos = new Position(
-                        current.getPosition().getLng() + move[0],
-                        current.getPosition().getLat() + move[1]
-                );
+            for (double ang : ANGLES) {
 
-                String nextKey = key(nextPos);
+                Position nextPos = nextPositionService.nextPosition(currPos, ang);
 
-                if (visited.containsKey(nextKey)) {
+                if (distanceService.euclideanDistance(start, nextPos) > 0.01) {
                     continue;
                 }
 
-                double g = current.getGCost() + 1;
-                double h = heuristic(nextPos, goal);
+                if (closed.containsKey(key(nextPos))) continue;
 
-                AstarNode nextNode = new AstarNode(nextPos, g, h, current);
+                if (isIllegalMove(currPos, nextPos)) continue;
 
-                open.add(nextNode);
+                AstarNode next = new AstarNode(
+                        nextPos,
+                        current.getGCost() + 1,
+                        heuristic(nextPos, goal),
+                        current
+                );
+
+                open.add(next);
             }
         }
 
         return new AstarPath(new ArrayList<>(), 0, false);
     }
 
+    // Restricted Area Checking
+    private boolean isIllegalMove(Position curr, Position next) {
+
+        for (RestrictedArea area : restrictedAreas) {
+
+            List<Position> poly = area.getVertices();
+            if (poly == null || poly.size() < 4) continue;
+
+            // next point inside polygon
+            if (polygonService.pointInPolygon(next, poly)) return true;
+
+            // line segment intersects polygon boundary
+            if (segmentIntersectsPolygon(curr, next, poly)) return true;
+        }
+
+        return false;
+    }
+
+    private boolean segmentIntersectsPolygon(Position p1, Position p2, List<Position> poly) {
+
+        for (int i = 0; i < poly.size() - 1; i++) {
+            Position a = poly.get(i);
+            Position b = poly.get(i + 1);
+
+            if (segmentsIntersect(p1, p2, a, b)) return true;
+        }
+
+        return false;
+    }
+
+    private int orientation(Position a, Position b, Position c) {
+        double val =
+                (b.getLat() - a.getLat()) * (c.getLng() - b.getLng()) -
+                        (b.getLng() - a.getLng()) * (c.getLat() - b.getLat());
+
+        if (Math.abs(val) < 1e-12) return 0;
+        return val > 0 ? 1 : 2;
+    }
+
+    private boolean onSegment(Position p, Position q, Position r) {
+        return q.getLng() <= Math.max(p.getLng(), r.getLng()) &&
+                q.getLng() >= Math.min(p.getLng(), r.getLng()) &&
+                q.getLat() <= Math.max(p.getLat(), r.getLat()) &&
+                q.getLat() >= Math.min(p.getLat(), r.getLat());
+    }
+
+    private boolean segmentsIntersect(Position p1, Position p2, Position q1, Position q2) {
+
+        int o1 = orientation(p1, p2, q1);
+        int o2 = orientation(p1, p2, q2);
+        int o3 = orientation(q1, q2, p1);
+        int o4 = orientation(q1, q2, p2);
+
+        if (o1 != o2 && o3 != o4) return true;
+
+        if (o1 == 0 && onSegment(p1, q1, p2)) return true;
+        if (o2 == 0 && onSegment(p1, q2, p2)) return true;
+        if (o3 == 0 && onSegment(q1, p1, q2)) return true;
+        if (o4 == 0 && onSegment(q1, p2, q2)) return true;
+
+        return false;
+    }
+
+    // Utils
+
     private double heuristic(Position a, Position b) {
-        double dist = distanceService.euclideanDistance(a, b);
-        return dist / STEP;
+        return distanceService.euclideanDistance(a, b) / STEP;
     }
 
     private String key(Position p) {
         return String.format("%.6f_%.6f", p.getLng(), p.getLat());
     }
 
-    private AstarPath reconstructPath(AstarNode node, boolean success) {
+    private AstarPath reconstruct(AstarNode node) {
         List<Position> path = new ArrayList<>();
+        AstarNode cur = node;
 
-        AstarNode current = node;
-        while (current != null) {
-            path.add(current.getPosition());
-            current = current.getParent();
+        while (cur != null) {
+            path.add(cur.getPosition());
+            cur = cur.getParent();
         }
-
         Collections.reverse(path);
 
-        return new AstarPath(
-                path,
-                path.size() - 1,
-                success
-        );
+        return new AstarPath(path, path.size() - 1, true);
     }
 }

@@ -118,7 +118,7 @@ public class calcDeliveryPathService {
         return null;
     }
 
-    private List<MedDispatchRec> sortDeliveriesByDate(List<MedDispatchRec> records) {
+    public List<MedDispatchRec> sortDeliveriesByDate(List<MedDispatchRec> records) {
         return records.stream()
                 .sorted(Comparator.comparing(MedDispatchRec::getDate)
                         .thenComparing(MedDispatchRec::getTime))

@@ -32,6 +32,9 @@ public class cw2Controller {
     @Autowired
     private calcDeliveryPathService calcDeliveryPathService;
 
+    @Autowired
+    private calcDeliveryPathAsGeoJsonService calcDeliveryPathAsGeoJsonService;
+
     @GetMapping("/dronesWithCooling/{state}")
     public List<String> getDronesWithCooling(@PathVariable boolean state) {
         return droneCoolingService.getDronesWithCooling(state);
@@ -67,6 +70,11 @@ public class cw2Controller {
     @PostMapping("/calcDeliveryPath")
     public CalcDeliveryPathResponse calcDeliveryPath(@RequestBody List<MedDispatchRec> records) {
         return calcDeliveryPathService.calcDeliveryPath(records);
+    }
+
+    @PostMapping("/calcDeliveryPathAsGeoJson")
+    public Object calcDeliveryPathAsGeoJson(@RequestBody List<MedDispatchRec> recs) {
+        return calcDeliveryPathAsGeoJsonService.calcDeliveryPathAsGeoJson(recs);
     }
 
 }
