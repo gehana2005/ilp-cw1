@@ -17,8 +17,10 @@ public class calcDeliveryPathAsGeoJsonService {
     private aStarNavigationService aStarNavigationService;
     private availableDronesService availableDronesService;
 
-    public  calcDeliveryPathAsGeoJsonService(String ilpEndpoint, calcDeliveryPathService calcDeliveryPathService, pathFindingService pathFindingService,
-                                             aStarNavigationService aStarNavigationService, availableDronesService availableDronesService) {
+    public calcDeliveryPathAsGeoJsonService(String ilpEndpoint, calcDeliveryPathService calcDeliveryPathService,
+                                            pathFindingService pathFindingService,
+                                            aStarNavigationService aStarNavigationService,
+                                            availableDronesService availableDronesService) {
         this.ilpEndpoint = ilpEndpoint;
         this.calcDeliveryPathService = calcDeliveryPathService;
         this.aStarNavigationService = aStarNavigationService;
@@ -32,10 +34,14 @@ public class calcDeliveryPathAsGeoJsonService {
             return emptyGeoJson();
         }
 
-        // sort
+        // Sort deliveries by date and time
         List<MedDispatchRec> sorted = calcDeliveryPathService.sortDeliveriesByDate(records);
 
-        // chose drone
+        if (calcDeliveryPathService.hasRestrictedDelivery(sorted)) {
+            return emptyGeoJson();
+        }
+
+        // Choose drone
         List<String> availableIds = availableDronesService.getAvailableDrones(sorted);
         if (availableIds.isEmpty()) return emptyGeoJson();
 
@@ -51,41 +57,94 @@ public class calcDeliveryPathAsGeoJsonService {
         }
         if (chosen == null) return emptyGeoJson();
 
-        // find the service point
+        // Find the service point for this drone
         ServicePoint sp = calcDeliveryPathService.findServicePointForDrone(chosen);
         if (sp == null) return emptyGeoJson();
 
-        Position start = sp.getLocation();
+        Position servicePointPos = sp.getLocation();
 
-        // get the path sequence
-        Map<Position, Double> seq = pathFindingService.findPath(start, sorted);
-
+        // Get the high-level path sequence (service point -> deliveries)
+        Map<Position, Double> seq = pathFindingService.findPath(servicePointPos, sorted);
         List<Position> nodes = new ArrayList<>(seq.keySet());
+
         if (nodes.size() < 2) return emptyGeoJson();
 
-        List<Position> fullRoute = new ArrayList<>();
-
-        for (int i = 0; i < nodes.size() - 1; i++) {
-            Position a = nodes.get(i);
-            Position b = nodes.get(i + 1);
-
-            AstarPath p = aStarNavigationService.findPath(a, b);
-
-            if (p.getPath().isEmpty()) continue;
-
-            if (i == 0) {
-                fullRoute.addAll(p.getPath());
-            } else {
-                fullRoute.addAll(p.getPath().subList(1, p.getPath().size()));
-            }
-        }
+        // Build the full route with A* navigation
+        List<Position> fullRoute = buildFullRoute(nodes, sorted, servicePointPos);
 
         return makeGeoJson(fullRoute);
     }
 
-    // helper functions
+    private List<Position> buildFullRoute(List<Position> nodes, List<MedDispatchRec> deliveries, Position servicePointPos) {
 
-    private Map<String, Object> emptyGeoJson(){
+        List<Position> fullRoute = new ArrayList<>();
+        int deliveryIndex = 0;
+
+        // Navigate through each segment
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            Position start = nodes.get(i);
+            Position goal = nodes.get(i + 1);
+
+            // Get A* path for this segment
+            AstarPath aPath = aStarNavigationService.findPath(start, goal);
+            List<Position> segmentPath = aPath.getPath();
+
+            if (segmentPath.isEmpty()) continue;
+
+            // Add segment to route
+            if (i == 0) {
+                // First segment: add all positions
+                fullRoute.addAll(segmentPath);
+            } else {
+                // Subsequent segments: skip first position to avoid duplicate
+                fullRoute.addAll(segmentPath.subList(1, segmentPath.size()));
+            }
+
+            // Check if this goal is a delivery point (not the service point)
+            boolean isDelivery = deliveryIndex < deliveries.size();
+
+            if (isDelivery) {
+                // Add hover at delivery point (repeat position twice)
+                fullRoute.add(goal);
+                fullRoute.add(goal);
+                deliveryIndex++;
+            }
+        }
+
+        // After all deliveries, return to service point
+        if (!fullRoute.isEmpty()) {
+            Position lastPos = fullRoute.get(fullRoute.size() - 1);
+
+            // Only add return path if we're not already at the service point
+            if (!positionsEqual(lastPos, servicePointPos)) {
+                AstarPath returnPath = aStarNavigationService.findPath(lastPos, servicePointPos);
+                List<Position> returnSegment = returnPath.getPath();
+
+                // Skip first position to avoid duplicate
+                if (returnSegment.size() > 1) {
+                    fullRoute.addAll(returnSegment.subList(1, returnSegment.size()));
+                }
+            }
+
+            // Ensure the final position is exactly the service point
+            Position finalPos = fullRoute.get(fullRoute.size() - 1);
+            if (!positionsEqual(finalPos, servicePointPos)) {
+                fullRoute.set(fullRoute.size() - 1, servicePointPos);
+            }
+        }
+
+        return fullRoute;
+    }
+
+    private boolean positionsEqual(Position p1, Position p2) {
+        if (p1 == null || p2 == null) return false;
+        return Double.compare(p1.getLng(), p2.getLng()) == 0 &&
+                Double.compare(p1.getLat(), p2.getLat()) == 0;
+    }
+
+    // Helper functions
+
+    private Map<String, Object> emptyGeoJson() {
         Map<String, Object> geo = new LinkedHashMap<>();
         geo.put("type", "FeatureCollection");
         geo.put("features", new ArrayList<>());
@@ -118,6 +177,4 @@ public class calcDeliveryPathAsGeoJsonService {
 
         return geo;
     }
-
-
 }

@@ -22,7 +22,6 @@ public class aStarNavigationService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final String ilpEndpoint;
 
-    // MUST be RestrictedArea, NOT Position
     private List<RestrictedArea> restrictedAreas = new ArrayList<>();
 
     private static final double STEP = 0.00015;
@@ -46,20 +45,34 @@ public class aStarNavigationService {
         PriorityQueue<AstarNode> open = new PriorityQueue<>(
                 Comparator.comparingDouble(n -> n.getGCost() + n.getHCost())
         );
+
         Map<String, AstarNode> closed = new HashMap<>();
+        Map<String, Double> bestG = new HashMap<>();
 
         AstarNode startNode = new AstarNode(start, 0, heuristic(start, goal), null);
         open.add(startNode);
+        bestG.put(key(start), 0.0);
+
+        int expansions = 0;
+        final int MAX_EXPANSIONS = 50000;
 
         while (!open.isEmpty()) {
 
-            if (closed.size() > 200000) {
+            if (expansions > MAX_EXPANSIONS) {
                 return new AstarPath(new ArrayList<>(), 0, false);
             }
 
             AstarNode current = open.poll();
             Position currPos = current.getPosition();
-            closed.put(key(currPos), current);
+            String currKey = key(currPos);
+
+            Double knownG = bestG.get(currKey);
+            if (knownG != null && current.getGCost() > knownG + 1e-9) {
+                continue;
+            }
+
+            closed.put(currKey, current);
+            expansions++;
 
             if (distanceService.isCloseTo(currPos, goal)) {
                 return reconstruct(current);
@@ -68,22 +81,29 @@ public class aStarNavigationService {
             for (double ang : ANGLES) {
 
                 Position nextPos = nextPositionService.nextPosition(currPos, ang);
+                String nextKey = key(nextPos);
 
-                if (distanceService.euclideanDistance(start, nextPos) > 0.01) {
+                if (Math.abs(nextPos.getLat() - start.getLat()) > 0.01 ||
+                        Math.abs(nextPos.getLng() - start.getLng()) > 0.01) {
                     continue;
                 }
 
-                if (closed.containsKey(key(nextPos))) continue;
+                if (closed.containsKey(nextKey)) continue;
 
                 if (isIllegalMove(currPos, nextPos)) continue;
 
-                AstarNode next = new AstarNode(
-                        nextPos,
-                        current.getGCost() + 1,
-                        heuristic(nextPos, goal),
-                        current
-                );
+                double g = current.getGCost() + 1;
 
+                Double prevBest = bestG.get(nextKey);
+                if (prevBest != null && g >= prevBest - 1e-9) {
+                    continue;
+                }
+
+                double h = heuristic(nextPos, goal) * 1.001;
+
+                AstarNode next = new AstarNode(nextPos, g, h, current);
+
+                bestG.put(nextKey, g);
                 open.add(next);
             }
         }
@@ -91,7 +111,7 @@ public class aStarNavigationService {
         return new AstarPath(new ArrayList<>(), 0, false);
     }
 
-    // Restricted Area Checking
+    // restricted area checking
     private boolean isIllegalMove(Position curr, Position next) {
 
         for (RestrictedArea area : restrictedAreas) {
@@ -99,10 +119,8 @@ public class aStarNavigationService {
             List<Position> poly = area.getVertices();
             if (poly == null || poly.size() < 4) continue;
 
-            // next point inside polygon
             if (polygonService.pointInPolygon(next, poly)) return true;
 
-            // line segment intersects polygon boundary
             if (segmentIntersectsPolygon(curr, next, poly)) return true;
         }
 
@@ -154,8 +172,7 @@ public class aStarNavigationService {
         return false;
     }
 
-    // Utils
-
+    // utils
     private double heuristic(Position a, Position b) {
         return distanceService.euclideanDistance(a, b) / STEP;
     }

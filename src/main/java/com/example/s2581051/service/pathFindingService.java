@@ -103,6 +103,7 @@ public class pathFindingService {
         double returnDist = distanceService.euclideanDistance(current, sp);
         result.put(sp, returnDist);
 
+
         return result;
     }
 
