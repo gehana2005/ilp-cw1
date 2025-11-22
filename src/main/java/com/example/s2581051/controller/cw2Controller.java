@@ -1,8 +1,6 @@
 package com.example.s2581051.controller;
 
-import com.example.s2581051.model.Drone;
-import com.example.s2581051.model.QueryRule;
-import com.example.s2581051.model.MedDispatchRec;
+import com.example.s2581051.model.*;
 import com.example.s2581051.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,6 +28,9 @@ public class cw2Controller {
 
     @Autowired
     private availableDronesService availableDronesService;
+
+    @Autowired
+    private calcDeliveryPathService calcDeliveryPathService;
 
     @GetMapping("/dronesWithCooling/{state}")
     public List<String> getDronesWithCooling(@PathVariable boolean state) {
@@ -61,6 +62,11 @@ public class cw2Controller {
     @PostMapping("/queryAvailableDrones")
     public List<String> queryAvailableDrones(@RequestBody List<MedDispatchRec> dispatches) {
         return availableDronesService.getAvailableDrones(dispatches);
+    }
+
+    @PostMapping("/calcDeliveryPath")
+    public CalcDeliveryPathResponse calcDeliveryPath(@RequestBody List<MedDispatchRec> records) {
+        return calcDeliveryPathService.calcDeliveryPath(records);
     }
 
 }

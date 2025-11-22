@@ -5,15 +5,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DronePath {
-
-    private String droneId;
-    private List<DeliveryPath> deliveries;
-
+public class AstarNode {
+    private Position position;
+    private double gCost;
+    private double hCost;
+    private AstarNode parent;
 }

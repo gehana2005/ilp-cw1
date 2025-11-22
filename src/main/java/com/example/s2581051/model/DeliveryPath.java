@@ -4,16 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.List;
 
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DronePath {
-
-    private String droneId;
-    private List<DeliveryPath> deliveries;
-
+public class DeliveryPath {
+    private long deliveryId;
+    private List<Position> flightPath;
 }

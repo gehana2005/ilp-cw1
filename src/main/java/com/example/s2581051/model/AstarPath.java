@@ -7,13 +7,12 @@ import lombok.Setter;
 
 import java.util.List;
 
-@Getter
 @Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DronePath {
-
-    private String droneId;
-    private List<DeliveryPath> deliveries;
-
+public class AstarPath {
+    private List<Position> path;
+    private int totalMoves;
+    private boolean success;
 }
