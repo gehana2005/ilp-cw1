@@ -53,14 +53,12 @@ public class aStarNavigationService {
         open.add(startNode);
         bestG.put(key(start), 0.0);
 
-        int expansions = 0;
-        final int MAX_EXPANSIONS = 50000;
+        double minLat = Math.min(start.getLat(), goal.getLat()) - 0.005;
+        double maxLat = Math.max(start.getLat(), goal.getLat()) + 0.005;
+        double minLng = Math.min(start.getLng(), goal.getLng()) - 0.005;
+        double maxLng = Math.max(start.getLng(), goal.getLng()) + 0.005;
 
         while (!open.isEmpty()) {
-
-            if (expansions > MAX_EXPANSIONS) {
-                return new AstarPath(new ArrayList<>(), 0, false);
-            }
 
             AstarNode current = open.poll();
             Position currPos = current.getPosition();
@@ -72,7 +70,6 @@ public class aStarNavigationService {
             }
 
             closed.put(currKey, current);
-            expansions++;
 
             if (distanceService.isCloseTo(currPos, goal)) {
                 return reconstruct(current);
@@ -83,8 +80,8 @@ public class aStarNavigationService {
                 Position nextPos = nextPositionService.nextPosition(currPos, ang);
                 String nextKey = key(nextPos);
 
-                if (Math.abs(nextPos.getLat() - start.getLat()) > 0.01 ||
-                        Math.abs(nextPos.getLng() - start.getLng()) > 0.01) {
+                if (nextPos.getLat() < minLat || nextPos.getLat() > maxLat ||
+                        nextPos.getLng() < minLng || nextPos.getLng() > maxLng) {
                     continue;
                 }
 

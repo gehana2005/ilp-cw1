@@ -313,6 +313,7 @@ public class calcDeliveryPathService {
             AstarPath aPath = aStarNavigationService.findPath(start, goal);
             List<Position> flightPath = new ArrayList<>(aPath.getPath());
 
+            // Fix A* path if needed
             if (flightPath.isEmpty()) {
                 flightPath.add(start);
                 flightPath.add(goal);
@@ -320,14 +321,15 @@ public class calcDeliveryPathService {
                 flightPath.add(0, start);
             }
 
-            // Ensure path ends at goal
+            // If path doesn't end at goal, add it
             if (!flightPath.isEmpty() && !positionsEqual(flightPath.get(flightPath.size() - 1), goal)) {
                 flightPath.add(goal);
             }
 
-            // Add hover for deliveries
+            // Always add hover for deliveries (adds goal once more)
             if (currentDelivery != null) {
                 flightPath.add(goal);
+                deliveryIndex++;
             }
 
             DeliveryPath dto = new DeliveryPath(
@@ -336,10 +338,6 @@ public class calcDeliveryPathService {
             );
 
             results.add(dto);
-
-            if (currentDelivery != null) {
-                deliveryIndex++;
-            }
         }
 
         // Append return path to last delivery
