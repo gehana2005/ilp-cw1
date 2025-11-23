@@ -279,7 +279,7 @@ public class calcDeliveryPathService {
 
 
         HighLevelPath dto = new HighLevelPath();
-        dto.setDroneId(Integer.parseInt(drone.getId()));
+        dto.setDroneId(drone.getId());
         dto.setServicePoint(sp);
         dto.setOrderedDeliveries(new ArrayList<>(deliveries));
         dto.setNodePath(orderedPositions);
@@ -421,7 +421,7 @@ public class calcDeliveryPathService {
             totalsOut.totalMoves += movesForDrone;
             totalsOut.totalCost += costForDrone;
 
-            list.add(new DronePath(Integer.parseInt(drone.getId()), deliveryPaths));
+            list.add(new DronePath(drone.getId(), deliveryPaths));
         }
 
         return list;
