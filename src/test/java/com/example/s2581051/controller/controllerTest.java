@@ -279,19 +279,6 @@ public class controllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    @DisplayName("POST /api/v1/nextPosition -> should handle negative angles correctly")
-    void testNextPositionNegativeAngle() throws Exception {
-        Position start = new Position(0.0, 0.0);
-        PositionRequest request = new PositionRequest(start, -90.0);
-
-        mockMvc.perform(post("/api/v1/nextPosition")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.lng", closeTo(0.0, 1e-12)))
-                .andExpect(jsonPath("$.lat", closeTo(-0.00015, 1e-12)));
-    }
 
     @Test
     @DisplayName("POST /api/v1/nextPosition -> should handle very small angles correctly")

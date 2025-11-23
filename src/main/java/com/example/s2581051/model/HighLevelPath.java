@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class HighLevelPath {
-    private String droneId;
+    private Integer droneId;
     private ServicePoint servicePoint;
     private List<MedDispatchRec> orderedDeliveries;
     private List<Position> nodePath;

@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class DronePath {
 
-    private String droneId;
+    private Integer droneId;
     private List<DeliveryPath> deliveries;
 
 }
