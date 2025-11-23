@@ -36,7 +36,6 @@ public class calcDeliveryPathService {
         this.polygonService = polygonService;
     }
 
-
     public CalcDeliveryPathResponse calcDeliveryPath(List<MedDispatchRec> records) {
 
         if (records == null || records.isEmpty()) {
@@ -76,7 +75,6 @@ public class calcDeliveryPathService {
 
         return assembleFinalResponse(dronePaths, totals);
     }
-
 
     public List<Drone> findCandidateDrones(List<MedDispatchRec> records) {
 
@@ -168,23 +166,6 @@ public class calcDeliveryPathService {
                 assignmentMap.get(nearest).add(record);
             }
         }
-        System.out.println("=== DEBUG : ASSIGNMENT MAP ===");
-
-        for (Map.Entry<ServicePoint, List<MedDispatchRec>> entry : assignmentMap.entrySet()) {
-            ServicePoint sp = entry.getKey();
-            System.out.println("ServicePoint: "
-                    + sp.getId() + " - " + sp.getName()
-                    + " @ (" + sp.getLocation().getLat()
-                    + ", " + sp.getLocation().getLng() + ")");
-
-            for (MedDispatchRec m : entry.getValue()) {
-                System.out.println("   Delivery: ID=" + m.getId()
-                        + " at (" + m.getDelivery().getLat()
-                        + ", " + m.getDelivery().getLng() + ")");
-            }
-        }
-
-
 
         return assignmentMap;
     }
@@ -306,107 +287,6 @@ public class calcDeliveryPathService {
         return dto;
     }
 
-//    private List<DeliveryPath> buildAStarPathsFromHighLevel(HighLevelPath high) {
-//
-//        List<DeliveryPath> results = new ArrayList<>();
-//
-//        List<Position> nodes = high.getNodePath();
-//        List<MedDispatchRec> deliveries = high.getOrderedDeliveries();
-//
-//        if (nodes == null || nodes.size() < 2) {
-//            return results;
-//        }
-//
-//        System.out.println("\n=== DEBUG buildAStarPathsFromHighLevel ===");
-//        System.out.println("Drone: " + high.getDroneId());
-//        System.out.println("Nodes: " + nodes.size());
-//        for (int i = 0; i < nodes.size(); i++) {
-//            Position n = nodes.get(i);
-//            System.out.println("  Node[" + i + "]: (" + n.getLng() + ", " + n.getLat() + ")");
-//        }
-//        System.out.println("Deliveries: " + deliveries.size());
-//
-//
-//        int deliveryIndex = 0;
-//
-//        for (int i = 0; i < nodes.size() - 1; i++) {
-//
-//            Position start = nodes.get(i);
-//            Position goal = nodes.get(i + 1);
-//
-//            System.out.println("\n--- Segment " + (i+1) + " ---");
-//            System.out.println("Start: (" + start.getLng() + ", " + start.getLat() + ")");
-//            System.out.println("Goal: (" + goal.getLng() + ", " + goal.getLat() + ")");
-//
-//            MedDispatchRec currentDelivery = null;
-//            if (deliveryIndex < deliveries.size()) {
-//                currentDelivery = deliveries.get(deliveryIndex);
-//                System.out.println("Current delivery: ID=" + currentDelivery.getId());
-//            } else {
-//                System.out.println("No delivery (waypoint/return)");
-//            }
-//
-//            AstarPath aPath = aStarNavigationService.findPath(start, goal);
-//            System.out.println("A* returned " + aPath.getPath().size() + " positions");
-//
-//            List<Position> flightPath = new ArrayList<>(aPath.getPath());
-//
-//            if (flightPath.isEmpty()) {
-//                System.out.println("WARNING: A* returned empty path, creating direct path");
-//                flightPath.add(start);
-//                flightPath.add(goal);
-//            } else if (!positionsEqual(flightPath.get(0), start)) {
-//                System.out.println("WARNING: A* path doesn't start at start position, adding it");
-//                flightPath.add(0, start);
-//            }
-//
-//            // Add hover - repeat delivery position twice
-//            if (currentDelivery != null) {
-//                System.out.println("Adding hover at goal");
-//                flightPath.add(goal);
-//                flightPath.add(goal);
-//            }
-//
-//            System.out.println("Flight path size: " + flightPath.size());
-//
-//            DeliveryPath dto = new DeliveryPath(
-//                    currentDelivery != null ? currentDelivery.getId() : -1,
-//                    flightPath
-//            );
-//
-//            results.add(dto);
-//
-//            if (currentDelivery != null) deliveryIndex++;
-//        }
-//
-//        // After all deliveries, append return path to the last delivery's flight path
-//        if (!results.isEmpty()) {
-//            Position lastDeliveryPos = nodes.get(nodes.size() - 1);
-//            Position servicePointPos = high.getServicePoint().getLocation();
-//
-//            AstarPath returnPath = aStarNavigationService.findPath(lastDeliveryPos, servicePointPos);
-//            List<Position> returnFlightPath = returnPath.getPath();
-//
-//            // Get the last delivery path and append the return path (skip first position to avoid duplicate)
-//            DeliveryPath lastDelivery = results.get(results.size() - 1);
-//            for (int i = 1; i < returnFlightPath.size(); i++) {
-//                lastDelivery.getFlightPath().add(returnFlightPath.get(i));
-//            }
-//
-//            // Ensure the final position is exactly the service point (not an approximation from A*)
-//            List<Position> lastPath = lastDelivery.getFlightPath();
-//            if (!lastPath.isEmpty()) {
-//                Position lastPos = lastPath.get(lastPath.size() - 1);
-//                if (!positionsEqual(lastPos, servicePointPos)) {
-//                    // Replace the last position with the exact service point location
-//                    lastPath.set(lastPath.size() - 1, servicePointPos);
-//                }
-//            }
-//        }
-//
-//        return results;
-//    }
-
     private List<DeliveryPath> buildAStarPathsFromHighLevel(HighLevelPath high) {
 
         List<DeliveryPath> results = new ArrayList<>();
@@ -433,7 +313,6 @@ public class calcDeliveryPathService {
             AstarPath aPath = aStarNavigationService.findPath(start, goal);
             List<Position> flightPath = new ArrayList<>(aPath.getPath());
 
-            // If A* returned empty or doesn't include start, add it manually
             if (flightPath.isEmpty()) {
                 flightPath.add(start);
                 flightPath.add(goal);
@@ -441,15 +320,14 @@ public class calcDeliveryPathService {
                 flightPath.add(0, start);
             }
 
-            // IMPORTANT: Add hover ONLY at delivery locations (not waypoints)
+            // Ensure path ends at goal
+            if (!flightPath.isEmpty() && !positionsEqual(flightPath.get(flightPath.size() - 1), goal)) {
+                flightPath.add(goal);
+            }
+
+            // Add hover for deliveries
             if (currentDelivery != null) {
-                // Make sure goal is in the path
-                if (flightPath.isEmpty() || !positionsEqual(flightPath.get(flightPath.size() - 1), goal)) {
-                    flightPath.add(goal);
-                }
-                // Add TWO hover positions
-                flightPath.add(goal);  // Hover 1
-                flightPath.add(goal);  // Hover 2
+                flightPath.add(goal);
             }
 
             DeliveryPath dto = new DeliveryPath(
@@ -459,37 +337,35 @@ public class calcDeliveryPathService {
 
             results.add(dto);
 
-            if (currentDelivery != null) deliveryIndex++;
+            if (currentDelivery != null) {
+                deliveryIndex++;
+            }
         }
 
-        // After all deliveries, append return path to the last delivery's flight path
+        // Append return path to last delivery
         if (!results.isEmpty()) {
             Position lastDeliveryPos = nodes.get(nodes.size() - 1);
             Position servicePointPos = high.getServicePoint().getLocation();
 
-            // Only add return if we're not already at service point
             if (!positionsEqual(lastDeliveryPos, servicePointPos)) {
                 AstarPath returnPath = aStarNavigationService.findPath(lastDeliveryPos, servicePointPos);
                 List<Position> returnFlightPath = returnPath.getPath();
 
                 DeliveryPath lastDelivery = results.get(results.size() - 1);
 
-                // If return path is empty, create direct path
                 if (returnFlightPath.isEmpty()) {
                     lastDelivery.getFlightPath().add(servicePointPos);
                 } else {
-                    // Skip first position to avoid duplicate
                     for (int i = 1; i < returnFlightPath.size(); i++) {
                         lastDelivery.getFlightPath().add(returnFlightPath.get(i));
                     }
-                }
 
-                // Ensure the final position is exactly the service point
-                List<Position> lastPath = lastDelivery.getFlightPath();
-                if (!lastPath.isEmpty()) {
-                    Position lastPos = lastPath.get(lastPath.size() - 1);
-                    if (!positionsEqual(lastPos, servicePointPos)) {
-                        lastPath.set(lastPath.size() - 1, servicePointPos);
+                    List<Position> lastPath = lastDelivery.getFlightPath();
+                    if (!lastPath.isEmpty()) {
+                        Position lastPos = lastPath.get(lastPath.size() - 1);
+                        if (!positionsEqual(lastPos, servicePointPos)) {
+                            lastPath.set(lastPath.size() - 1, servicePointPos);
+                        }
                     }
                 }
             }
@@ -541,7 +417,6 @@ public class calcDeliveryPathService {
             }
 
             // No need for separate return calculation - already included in buildAStarPathsFromHighLevel
-
             costForDrone += drone.getCapability().getCostInitial();
             costForDrone += drone.getCapability().getCostFinal();
 

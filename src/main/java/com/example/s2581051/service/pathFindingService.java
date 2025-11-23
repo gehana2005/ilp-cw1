@@ -100,10 +100,6 @@ public class pathFindingService {
             current = next;
         }
 
-        double returnDist = distanceService.euclideanDistance(current, sp);
-        result.put(sp, returnDist);
-
-
         return result;
     }
 
